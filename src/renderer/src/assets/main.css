@@ -1,4 +1,5 @@
-@import './base.css';
+@import "tailwindcss";
+/* @import './base.css';
 
 body {
   display: flex;
@@ -160,4 +161,4 @@ code {
   .actions {
     display: none;
   }
-}
+} */
