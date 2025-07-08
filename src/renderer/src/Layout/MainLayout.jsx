@@ -17,7 +17,7 @@ export default function MainLayout() {
   <Sidebar />
   <div className="flex flex-col w-full h-full bg-gray-100">
     <Navbar />
-    <div className="flex-1 px-2 overflow-hidden">
+    <div className="flex-1 px-2">
       <Outlet />
     </div>
   </div>
