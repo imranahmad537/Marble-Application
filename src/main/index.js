@@ -43,7 +43,7 @@ app.whenReady().then(() => {
   db = new Database(dbPath);
   console.log('✅ SQLite DB connected at:', dbPath);
 
-  // 🧱 Create tables
+  //  Create tables
   db.prepare(`
     CREATE TABLE IF NOT EXISTS customers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,12 +52,16 @@ app.whenReady().then(() => {
       received REAL,
       total REAL,
       remaining REAL,
-      created_at TEXT
+      created_at TEXT,
+      total REAL,
+      paid REAL,
+      dues REAL
+      FOREIGN KEY(customer_id) REFERENCES customers(id)
     )
   `).run();
 
   db.prepare(`
-    CREATE TABLE IF NOT EXISTS products (
+    CREATE TABLE IF NOT EXISTS order_products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       customer_id INTEGER,
       description TEXT,
@@ -69,9 +73,21 @@ app.whenReady().then(() => {
       feet REAL,
       total REAL,
       FOREIGN KEY(customer_id) REFERENCES customers(id)
+
+      FOREIGN KEY(product_id) REFERENCES products(id),
     )
   `).run();
 
+  db.prepare(
+    `CREATE TABLE IF NOT EXISTS products (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  rate REAL NOT NULL,
+  type TEXT,
+  is_active INTEGER DEFAULT 1
+)`
+  )
+  
   // ✅ IPC handler
   ipcMain.handle('save-invoice', (event, payload) => {
     const { customer, products } = payload;
@@ -111,10 +127,49 @@ app.whenReady().then(() => {
 
     insertMany(products);
     return { success: true, customerId };
+    
   });
 
   // 🪟 Create window and shortcuts
   createWindow();
+  
+
+
+  // Handle request from renderer
+ipcMain.handle('get-users', (event, searchName) => {
+  const stmt = searchName
+    ? db.prepare('SELECT * FROM customers WHERE name LIKE ?')
+    : db.prepare('SELECT * FROM customers');
+
+  const rows = searchName ? stmt.all(`%${searchName}%`) : stmt.all();
+  return rows;
+});
+
+// ------------------
+// add product by admin
+ipcMain.handle('add-product', (event, product) => {
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO products (name, rate, type)
+      VALUES (?, ?, ?)
+    `);
+    stmt.run(product.name, product.rate, product.type);
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { success: false };
+  }
+});
+
+ipcMain.handle('get-products', () => {
+  const stmt = db.prepare('SELECT name, type, rate FROM products');
+  const all = stmt.all();
+  return all;
+});
+
+//-----------------------
+
+
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
@@ -123,6 +178,7 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+
 });
 
 app.on('window-all-closed', () => {
