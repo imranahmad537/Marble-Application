@@ -1,40 +1,58 @@
 // src/Pages/AdminProductForm.jsx
-import React, { useState } from 'react';
-import { Container, Card, Form, Button } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react'
+import { Container, Card, Form, Button } from 'react-bootstrap'
 
 export default function AdminProductForm() {
-  
-  const [form, setForm] = useState({
-    name: '',
-    rate: '',
-    type: ''
-  });
+  const [availableProducts, setAvailableProducts] = useState([])
+  const [form, setForm] = useState({ name: '', rate: '', type: '' })
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const products = await window.electron.getProducts()
+        setAvailableProducts(products)
+      } catch (err) {
+        console.error('Failed to fetch products', err)
+      }
+    }
+
+    fetchProducts()
+  }, [])
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+    const { name, value } = e.target
+    setForm({ ...form, [name]: value })
+  }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!form.name || !form.rate) {
-      alert('Name and Rate are required');
-      return;
+  if (!form.name || !form.rate) {
+    alert('Name and Rate are required');
+    return;
+  }
+
+  try {
+    const result = await window.electron.invoke('add-product', form);
+    if (result.success) {
+      alert('✅ Product added successfully!');
+      setForm({ name: '', rate: '', type: '' });
+
+      // 🔄 Fetch and sort the updated product list
+      const updatedProducts = await window.electron.getProducts();
+      const sortedProducts = updatedProducts.sort((a, b) =>
+        a.name.localeCompare(b.name)
+      );
+      setAvailableProducts(sortedProducts);
+    } else {
+      alert('❌ Failed to add product');
     }
+  } catch (error) {
+    console.error(error);
+    alert('❌ Error occurred');
+  }
+};
 
-    try {
-      const result = await window.electron.invoke('add-product', form);
-      if (result.success) {
-        alert('✅ Product added successfully!');
-        setForm({ name: '', rate: '', type: '' });
-      } else {
-        alert('❌ Failed to add product');
-      }
-    } catch (error) {
-      console.error(error);
-      alert('❌ Error occurred');
-    }
-  };
 
   return (
     <Container className="py-5">
@@ -45,12 +63,13 @@ export default function AdminProductForm() {
             <Form.Label>Product Name</Form.Label>
             <Form.Control
               name="name"
-              placeholder="e.g., Black Granite"
+              placeholder="e.g., White Marble"
               value={form.name}
               onChange={handleChange}
               required
             />
           </Form.Group>
+
           <Form.Group className="mb-3">
             <Form.Label>Rate per ft² (₨)</Form.Label>
             <Form.Control
@@ -61,6 +80,7 @@ export default function AdminProductForm() {
               required
             />
           </Form.Group>
+
           <Form.Group className="mb-3">
             <Form.Label>Type (optional)</Form.Label>
             <Form.Control
@@ -70,9 +90,25 @@ export default function AdminProductForm() {
               onChange={handleChange}
             />
           </Form.Group>
-          <Button type="submit" variant="success">💾 Add Product</Button>
+
+          <Button type="submit" variant="success">
+            Add Product
+          </Button>
         </Form>
+        {availableProducts.length > 0 && (
+  <Card className="mt-4 p-3 shadow-sm">
+    <h5>📦 Existing Products</h5>
+    <ul className="mb-0">
+      {availableProducts.map((p, i) => (
+        <li key={i}>
+          {p.name} - {p.type || '—'} — <strong>₨{p.rate}</strong>
+        </li>
+      ))}
+    </ul>
+  </Card>
+)}
+
       </Card>
     </Container>
-  );
+  )
 }

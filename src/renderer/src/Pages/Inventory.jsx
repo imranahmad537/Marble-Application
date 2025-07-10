@@ -15,6 +15,10 @@ export default function MarbleSaleApp() {
     discount: '',
   });
 
+  const [availableProducts, setAvailableProducts] = useState([]);
+  const [marbleOptions, setMarbleOptions] = useState([]);
+  const [typeOptions, setTypeOptions] = useState([]);
+
   const [customer, setCustomer] = useState({
     name: '',
     contact: '',
@@ -26,27 +30,35 @@ export default function MarbleSaleApp() {
   const [received, setReceived] = useState('');
   const printContainerRef = useRef();
 
-  const marbleOptions = [
-    { label: 'Black Granite', value: 'Black Granite' },
-    { label: 'White Marble', value: 'White Marble' },
-    { label: 'Green Marble', value: 'Green Marble' },
-    { label: 'Imported Onyx', value: 'Imported Onyx' },
-    { label: 'Botticino Classic', value: 'Botticino Classic' }
-  ];
+  // 🧠 Fetch products and setup options
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const products = await window.electron.getProducts();
+        products.sort((a, b) => a.name.localeCompare(b.name));
+        setAvailableProducts(products);
 
-  const typeOptions = [
-    { label: 'SLF', value: 'SLF' },
-    { label: 'Tier 1', value: 'Tier 1' },
-    { label: 'Tier 2', value: 'Tier 2' },
-    { label: 'Premium', value: 'Premium' }
-  ];
+        const uniqueNames = [...new Set(products.map((p) => p.name))];
+        const uniqueTypes = [...new Set(products.map((p) => p.type))];
 
+        setMarbleOptions(uniqueNames.map(name => ({ label: name, value: name })));
+        setTypeOptions(uniqueTypes.map(type => ({ label: type, value: type })));
+      } catch (err) {
+        console.error("❌ Failed to fetch products:", err);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // 🧮 Feet calculation
   useEffect(() => {
     const { length, width } = product;
     const calcFeet = parseFloat(length) * parseFloat(width);
     setFeet(isNaN(calcFeet) ? 0 : calcFeet);
   }, [product.length, product.width]);
 
+  // 💰 Total calculation
   useEffect(() => {
     const { rate, discount } = product;
     const amount = feet * parseFloat(rate);
@@ -63,7 +75,20 @@ export default function MarbleSaleApp() {
   };
 
   const handleSelectChange = (selected, field) => {
-    setProduct({ ...product, [field]: selected ? selected.value : '' });
+    const value = selected ? selected.value : '';
+    const updated = { ...product, [field]: value };
+
+    // Auto-fill rate if both fields are present
+    const match = availableProducts.find(p =>
+      p.name === (field === 'description' ? value : updated.description) &&
+      p.type === (field === 'type' ? value : updated.type)
+    );
+
+    if (match) {
+      updated.rate = match.rate.toString();
+    }
+
+    setProduct(updated);
   };
 
   const addProduct = () => {
@@ -113,28 +138,17 @@ export default function MarbleSaleApp() {
     };
 
     try {
-    const result = await window.electron.saveInvoice(payload);
+      const result = await window.electron.saveInvoice(payload);
+      alert("✅ Invoice saved with ID: " + result.customerId);
 
-
-      alert("Invoice saved successfully with ID: " + result.customerId);
-        // Clear all inputs after successful save
-    setCustomer({ name: '', contact: '', address: '' }); // or your actual fields
-    setReceived('');
-    setProductList([]);
-    setProduct({
-      description: '',
-      type: '',
-      length: '',
-      width: '',
-      rate: '',
-      discount: '',
-    });
-
-    // ✅ Optional: scroll to top or focus
-    window.scrollTo(0, 0);
+      setCustomer({ name: '', contact: '' });
+      setReceived('');
+      setProductList([]);
+      setProduct({ description: '', type: '', length: '', width: '', rate: '', discount: '' });
+      window.scrollTo(0, 0);
     } catch (err) {
-      alert("Failed to save invoice.");
       console.error(err);
+      alert("❌ Failed to save invoice.");
     }
   };
 
@@ -307,14 +321,12 @@ export default function MarbleSaleApp() {
                     <div><strong>🧮 Grand Total:</strong> <span className="text-success fs-5">₨ {grandTotal.toFixed(2)}</span></div>
                     <div className="mt-2">
                       <Form.Label>Received Payment (₨)</Form.Label>
-                     <div>
-                       <Form.Control
+                      <Form.Control
                         type="number"
                         placeholder="e.g. 12000"
                         value={received}
                         onChange={(e) => setReceived(e.target.value)}
                       />
-                     </div>
                     </div>
                     <div className="mt-2">
                       <strong>💰 Remaining Payment:</strong>{' '}

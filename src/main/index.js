@@ -42,51 +42,51 @@ app.whenReady().then(() => {
   const dbPath = path.join(app.getPath('userData'), 'marble-factory.db');
   db = new Database(dbPath);
   console.log('✅ SQLite DB connected at:', dbPath);
+db = new Database(dbPath);
+db.pragma('foreign_keys = ON'); // ✅ Add this line
 
   //  Create tables
   db.prepare(`
-    CREATE TABLE IF NOT EXISTS customers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      contact TEXT,
-      received REAL,
-      total REAL,
-      remaining REAL,
-      created_at TEXT,
-      total REAL,
-      paid REAL,
-      dues REAL
-      FOREIGN KEY(customer_id) REFERENCES customers(id)
-    )
-  `).run();
+  CREATE TABLE IF NOT EXISTS customers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    contact TEXT,
+    received REAL,
+    total REAL,
+    remaining REAL,
+    created_at TEXT,
+    paid REAL,
+    dues REAL
+  )
+`).run();
+
 
   db.prepare(`
     CREATE TABLE IF NOT EXISTS order_products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      customer_id INTEGER,
-      description TEXT,
-      type TEXT,
-      length REAL,
-      width REAL,
-      rate REAL,
-      discount REAL,
-      feet REAL,
-      total REAL,
-      FOREIGN KEY(customer_id) REFERENCES customers(id)
-
-      FOREIGN KEY(product_id) REFERENCES products(id),
+    customer_id INTEGER,
+    description TEXT,
+    type TEXT,
+    length REAL,
+    width REAL,
+    rate REAL,
+    discount REAL,
+    feet REAL,
+    total REAL,
+    FOREIGN KEY(customer_id) REFERENCES customers(id)
     )
   `).run();
 
   db.prepare(
-    `CREATE TABLE IF NOT EXISTS products (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  rate REAL NOT NULL,
-  type TEXT,
-  is_active INTEGER DEFAULT 1
-)`
-  )
+  `CREATE TABLE IF NOT EXISTS products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    rate REAL NOT NULL,
+    type TEXT,
+    is_active INTEGER DEFAULT 1
+  )`
+).run(); // ✅ this was missing
+
   
   // ✅ IPC handler
   ipcMain.handle('save-invoice', (event, payload) => {
@@ -106,7 +106,7 @@ app.whenReady().then(() => {
     const customerId = customerResult.lastInsertRowid;
 
     const insertProduct = db.prepare(`
-      INSERT INTO products (customer_id, description, type, length, width, rate, discount, feet, total)
+      INSERT INTO order_products (customer_id, description, type, length, width, rate, discount, feet, total)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const insertMany = db.transaction((products) => {
@@ -161,12 +161,20 @@ ipcMain.handle('add-product', (event, product) => {
   }
 });
 
-ipcMain.handle('get-products', () => {
-  const stmt = db.prepare('SELECT name, type, rate FROM products');
-  const all = stmt.all();
-  return all;
+// ipcMain.handle('get-products', () => {
+//   const stmt = db.prepare('SELECT name, type, rate FROM products');
+//   const all = stmt.all();
+//   return all;
+// });
+ipcMain.handle("get-products", async () => {
+  try {
+    const products = db.prepare("SELECT * FROM products").all();
+    return products;
+  } catch (error) {
+    console.error("Failed to fetch products:", error);
+    return [];
+  }
 });
-
 //-----------------------
 
 
