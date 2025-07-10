@@ -42,11 +42,10 @@ app.whenReady().then(() => {
   const dbPath = path.join(app.getPath('userData'), 'marble-factory.db');
   db = new Database(dbPath);
   console.log('✅ SQLite DB connected at:', dbPath);
-db = new Database(dbPath);
+
 db.pragma('foreign_keys = ON'); // ✅ Add this line
 
-  //  Create tables
-  db.prepare(`
+db.prepare(`
   CREATE TABLE IF NOT EXISTS customers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
@@ -56,9 +55,25 @@ db.pragma('foreign_keys = ON'); // ✅ Add this line
     remaining REAL,
     created_at TEXT,
     paid REAL,
-    dues REAL
+    dues REAL,
+    customer_type TEXT DEFAULT 'credit' -- 'walk-in' or 'credit'
   )
 `).run();
+
+//   //  Create tables
+//   db.prepare(`
+//   CREATE TABLE IF NOT EXISTS customers (
+//     id INTEGER PRIMARY KEY AUTOINCREMENT,
+//     name TEXT,
+//     contact TEXT,
+//     received REAL,
+//     total REAL,
+//     remaining REAL,
+//     created_at TEXT,
+//     paid REAL,
+//     dues REAL
+//   )
+// `).run();
 
 
   db.prepare(`
@@ -92,17 +107,32 @@ db.pragma('foreign_keys = ON'); // ✅ Add this line
   ipcMain.handle('save-invoice', (event, payload) => {
     const { customer, products } = payload;
 
-    const insertCustomer = db.prepare(`
-      INSERT INTO customers (name, contact, received, total, remaining, created_at)
-      VALUES (?, ?, ?, ?, ?, datetime('now'))
-    `);
-    const customerResult = insertCustomer.run(
-      customer.name,
-      customer.contact,
-      customer.received,
-      customer.total,
-      customer.remaining
-    );
+    // const insertCustomer = db.prepare(`
+    //   INSERT INTO customers (name, contact, received, total, remaining, created_at)
+    //   VALUES (?, ?, ?, ?, ?, datetime('now'))
+    // `);
+const insertCustomer = db.prepare(`
+  INSERT INTO customers 
+  (name, contact, received, total, remaining, created_at, customer_type)
+  VALUES (?, ?, ?, ?, ?, datetime('now'), ?)
+`);
+
+const result = insertCustomer.run(
+  customer.name,
+  customer.contact,
+  customer.received,
+  customer.total,
+  customer.remaining,
+  customer.customer_type
+);
+
+    // const customerResult = insertCustomer.run(
+    //   customer.name,
+    //   customer.contact,
+    //   customer.received,
+    //   customer.total,
+    //   customer.remaining
+    // );
     const customerId = customerResult.lastInsertRowid;
 
     const insertProduct = db.prepare(`

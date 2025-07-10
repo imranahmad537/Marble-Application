@@ -80,10 +80,9 @@ export default function MarbleSaleApp() {
 
     // Auto-fill rate if both fields are present
     const match = availableProducts.find(p =>
-      p.name === (field === 'description' ? value : updated.description) &&
-      p.type === (field === 'type' ? value : updated.type)
-    );
-
+  p.name === (field === 'description' ? value : updated.description) &&
+  p.type === (field === 'type' ? value : updated.type)
+);
     if (match) {
       updated.rate = match.rate.toString();
     }
@@ -118,39 +117,85 @@ export default function MarbleSaleApp() {
     content: () => printContainerRef.current,
   });
 
-  const finalizeAndSave = async () => {
-    const grandTotal = productList.reduce((sum, item) => sum + parseFloat(item.total), 0);
-    const remaining = grandTotal - parseFloat(received || 0);
+  // const finalizeAndSave = async () => {
+  //   const grandTotal = productList.reduce((sum, item) => sum + parseFloat(item.total), 0);
+  //   const remaining = grandTotal - parseFloat(received || 0);
 
-    if (!customer.name || !customer.contact || productList.length === 0) {
-      alert("Please enter customer details and add at least one product.");
+  //   if (!customer.name || !customer.contact || productList.length === 0) {
+  //     alert("Please enter customer details and add at least one product.");
+  //     return;
+  //   }
+
+  //   const payload = {
+  //     customer: {
+  //       ...customer,
+  //       received: parseFloat(received || 0),
+  //       total: grandTotal,
+  //       remaining: remaining
+  //     },
+  //     products: productList
+  //   };
+
+  //   try {
+  //     const result = await window.electron.saveInvoice(payload);
+  //     alert("✅ Invoice saved with ID: " + result.customerId);
+
+  //     setCustomer({ name: '', contact: '' });
+  //     setReceived('');
+  //     setProductList([]);
+  //     setProduct({ description: '', type: '', length: '', width: '', rate: '', discount: '' });
+  //     window.scrollTo(0, 0);
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("❌ Failed to save invoice.");
+  //   }
+  // };
+const finalizeAndSave = async () => {
+  const grandTotal = productList.reduce((sum, item) => sum + parseFloat(item.total), 0);
+  const receivedAmount = parseFloat(received || 0);
+  const remaining = grandTotal - receivedAmount;
+
+  // ✅ Require customer info only if payment is not full
+  if (remaining > 0) {
+    if (!customer.name || !customer.contact) {
+      alert("⚠️ Please enter customer name and contact for partial payments.");
       return;
     }
+  }
 
-    const payload = {
-      customer: {
-        ...customer,
-        received: parseFloat(received || 0),
-        total: grandTotal,
-        remaining: remaining
-      },
-      products: productList
-    };
-
-    try {
-      const result = await window.electron.saveInvoice(payload);
-      alert("✅ Invoice saved with ID: " + result.customerId);
-
-      setCustomer({ name: '', contact: '' });
-      setReceived('');
-      setProductList([]);
-      setProduct({ description: '', type: '', length: '', width: '', rate: '', discount: '' });
-      window.scrollTo(0, 0);
-    } catch (err) {
-      console.error(err);
-      alert("❌ Failed to save invoice.");
-    }
+  const payload = {
+    customer: {
+      name: remaining > 0 ? customer.name : 'Cash Customer',
+      contact: remaining > 0 ? customer.contact : '',
+      received: receivedAmount,
+      total: grandTotal,
+      remaining
+    },
+    products: productList
   };
+
+  try {
+    const result = await window.electron.saveInvoice(payload);
+    alert("✅ Invoice saved successfully with ID: " + result.customerId);
+
+    // Reset form
+    setCustomer({ name: '', contact: '' });
+    setReceived('');
+    setProductList([]);
+    setProduct({
+      description: '',
+      type: '',
+      length: '',
+      width: '',
+      rate: '',
+      discount: '',
+    });
+    window.scrollTo(0, 0);
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to save invoice.");
+  }
+};
 
   const grandTotal = productList.reduce((sum, item) => sum + parseFloat(item.total), 0);
   const remaining = grandTotal - parseFloat(received || 0);
@@ -158,7 +203,7 @@ export default function MarbleSaleApp() {
   return (
     <Container fluid className="py-4 px-3" style={{ maxHeight: '100vh', overflow: 'auto' }}>
       {/* CUSTOMER INFO SECTION */}
-      <Card className="shadow-sm rounded-4 p-3 mb-4">
+      {/* <Card className="shadow-sm rounded-4 p-3 mb-4">
         <Card.Title className="fs-4 text-primary">👤 Customer Information</Card.Title>
         <Row className="mb-2">
           <Col md={4}>
@@ -180,7 +225,8 @@ export default function MarbleSaleApp() {
             />
           </Col>
         </Row>
-      </Card>
+      </Card> */}
+      
 
       {/* ADD PRODUCT SECTION */}
       <Card className="shadow-sm rounded-4 p-3 mb-4">
