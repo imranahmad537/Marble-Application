@@ -209,6 +209,36 @@ ipcMain.handle("get-products", async () => {
 
 
 
+
+
+// update product 
+ipcMain.handle('update-product', (event, product) => {
+  try {
+    const stmt = db.prepare(`UPDATE products SET rate = ?, type = ? WHERE name = ?`);
+    const result = stmt.run(product.rate, product.type || null, product.name);
+    return { success: result.changes > 0 };
+  } catch (err) {
+    console.error("Update failed", err);
+    return { success: false };
+  }
+});
+ //---------------------------
+
+ // delete product
+ ipcMain.handle('delete-product', (event, product) => {
+  try {
+    const stmt = db.prepare(`DELETE FROM products WHERE name = ?`);
+    const result = stmt.run(product.name);
+    return { success: result.changes > 0 };
+  } catch (err) {
+    console.error("Delete failed", err);
+    return { success: false };
+  }
+});
+//-------------------------
+
+
+
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
   });
