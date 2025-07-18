@@ -1,2 +1,14 @@
 the rate should be based on the type of marble
 the 
+Invoice #1234 (Partial Customer)
+CNIC: 35201-XXXXXXX-X
+Contact: 0300-XXXXXXX
+Date: 2025-07-08
+
+Products:
+-----------------------------------------
+| Description | Type | Feet | Total |
+-----------------------------------------
+| Product A   | X    | 10   | 5000  |
+| Product B   | Y    | 12   | 6000  |
+-----------------------------------------

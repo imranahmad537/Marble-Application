@@ -16,6 +16,8 @@ export default function AdminProductForm() {
     fetchProducts();
   }, []);
 
+  console.log(window.electron);
+
   const fetchProducts = async () => {
     try {
       const products = await window.electron.getProducts();
@@ -40,14 +42,15 @@ export default function AdminProductForm() {
     try {
       let result;
       if (editIndex !== null) {
-        result = await window.electron.invoke('update-product', form);
+        result = await window.electron.updateProduct(form);
         if (result.success) {
           alert('✅ Product updated successfully!');
         } else {
           alert('❌ Failed to update product');
         }
       } else {
-        result = await window.electron.invoke('add-product', form);
+     const   result = await window.electron.addProduct(form);
+
         if (result.success) {
           alert('✅ Product added successfully!');
         } else {
@@ -71,21 +74,38 @@ export default function AdminProductForm() {
   };
 
   const handleDelete = async (product) => {
-    if (!window.confirm(`Are you sure to delete "${product.name}"?`)) return;
+  if (!window.confirm(`Are you sure to delete "${product.name}"?`)) return;
 
-    try {
-      const result = await window.electron.invoke('delete-product', product);
-      if (result.success) {
-        alert('🗑️ Product deleted!');
-        fetchProducts();
-      } else {
-        alert('❌ Failed to delete product');
-      }
-    } catch (error) {
-      console.error(error);
-      alert('❌ Error during deletion');
+  try {
+    const result = await window.electron.deleteProduct(product);
+    if (result.success) {
+      alert('🗑️ Product deleted!');
+      await fetchProducts();  // Ensure it’s awaited for consistency
+    } else {
+      alert('❌ Failed to delete product');
     }
-  };
+  } catch (error) {
+    console.error(error);
+    alert('❌ Error during deletion');
+  }
+};
+
+  // const handleDelete = async (product) => {
+  //   if (!window.confirm(`Are you sure to delete "${product.name}"?`)) return;
+
+  //   try {
+  //    result = await window.electron.deleteProduct(product);
+  //     if (result.success) {
+  //       alert('🗑️ Product deleted!');
+  //       fetchProducts();
+  //     } else {
+  //       alert('❌ Failed to delete product');
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //     alert('❌ Error during deletion');
+  //   }
+  // };
 
   // Pagination
   const totalPages = Math.ceil(availableProducts.length / pageSize);

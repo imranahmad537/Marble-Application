@@ -8,6 +8,9 @@ export default function Sidebar() {
         <Link to="/" className="flex items-center  p-2 text-white hover:bg-gray-700 rounded">
           <i className="fas fa-receipt mr-2"></i> Dashboard
         </Link>
+         <Link to="/newdashboard" className="flex items-center  p-2 text-white hover:bg-gray-700 rounded">
+          <i className="fas fa-receipt mr-2"></i> New Dashboard
+        </Link>
         <Link to="/order" className="flex items-center p-2 text-white hover:bg-gray-700 rounded">
           <i className="fas fa-receipt mr-2"></i> Order
         </Link>
@@ -15,7 +18,7 @@ export default function Sidebar() {
           to="/inventory"
           className="flex items-center p-2 text-white hover:bg-gray-700 rounded"
         >
-          <i className="fas fa-receipt mr-2"></i> Inventory
+          <i className="fas fa-receipt mr-2"></i> New Order
         </Link>
          <Link to="/history" className="flex items-center p-2 text-white hover:bg-gray-700 rounded">
            <i className="fas fa-receipt mr-2"></i> History
