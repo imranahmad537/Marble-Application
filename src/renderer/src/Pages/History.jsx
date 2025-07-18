@@ -18,6 +18,7 @@ function History() {
 
   const fetchFullCustomers = async () => {
     const result = await window.electron.getFullCustomerDetails();
+    console.log("Full Customers:", result);  // Debug
     setFullCustomers(result);
   };
 
@@ -27,7 +28,7 @@ function History() {
   };
 
   const fetchOrderProducts = async () => {
-    const result = await window.electron.getAllOrderInvoiceProducts();
+    const result = await window.electron.getCustomerOrderInvoice();
     setOrderProducts(result);
   };
 
@@ -71,35 +72,46 @@ function History() {
       {/* Full Customers Tab */}
       {tab === "full" && (
         <>
-          <h3 className="font-semibold mb-2">Full Customers (Flat Table)</h3>
+          <h3 className="font-semibold mb-2">Full Customers</h3>
           <table className="border w-full text-sm">
             <thead>
               <tr className="bg-gray-200">
                 <th className="border p-1">Invoice ID</th>
-                <th className="border p-1">Created At</th>
+                <th className="border p-1">Name</th>
                 <th className="border p-1">Description</th>
                 <th className="border p-1">Type</th>
                 <th className="border p-1">Feet</th>
                 <th className="border p-1">Rate</th>
                 <th className="border p-1">Discount</th>
                 <th className="border p-1">Total</th>
+                <th className="border p-1">Created at</th>
               </tr>
             </thead>
             <tbody>
-              {handleSearch(fullCustomers, ["id"]).flatMap(customer =>
-                customer.products.map((product, index) => (
+              {handleSearch(fullCustomers, ["id", "name"]).flatMap((customer) => {
+                if (!customer.products || customer.products.length === 0) {
+                  return (
+                    <tr key={`${customer.id}-empty`}>
+                      <td colSpan="9" className="text-center text-gray-400">
+                        No products for customer {customer.name}
+                      </td>
+                    </tr>
+                  );
+                }
+                return customer.products.map((product, index) => (
                   <tr key={`${customer.id}-${index}`}>
                     <td className="border p-1">{customer.id}</td>
-                    <td className="border p-1">{customer.created_at}</td>
+                    <td className="border p-1">{customer.name}</td>
                     <td className="border p-1">{product.description}</td>
                     <td className="border p-1">{product.type}</td>
                     <td className="border p-1">{product.feet}</td>
                     <td className="border p-1">{product.rate}</td>
                     <td className="border p-1">{product.discount}</td>
                     <td className="border p-1">{product.total}</td>
+                    <td className="border p-1">{customer.created_at}</td>
                   </tr>
-                ))
-              )}
+                ));
+              })}
             </tbody>
           </table>
         </>
@@ -113,6 +125,7 @@ function History() {
             <thead>
               <tr className="bg-gray-200">
                 <th className="border p-1">Invoice ID</th>
+                <th className="border p-1">Name</th>
                 <th className="border p-1">CNIC</th>
                 <th className="border p-1">Contact</th>
                 <th className="border p-1">Created At</th>
@@ -125,10 +138,11 @@ function History() {
               </tr>
             </thead>
             <tbody>
-              {handleSearch(partialCustomers, ["id", "contact", "cnic"]).flatMap(customer =>
-                customer.products.map((product, index) => (
+              {handleSearch(partialCustomers, ["id", "contact", "cnic"]).flatMap(customer => {
+                return (customer.products || []).map((product, index) => (
                   <tr key={`${customer.id}-${index}`}>
                     <td className="border p-1">{customer.id}</td>
+                    <td className="border p-1">{customer.name}</td>
                     <td className="border p-1">{customer.cnic}</td>
                     <td className="border p-1">{customer.contact}</td>
                     <td className="border p-1">{customer.created_at}</td>
@@ -139,8 +153,8 @@ function History() {
                     <td className="border p-1">{product.discount}</td>
                     <td className="border p-1">{product.total}</td>
                   </tr>
-                ))
-              )}
+                ));
+              })}
             </tbody>
           </table>
         </>
@@ -154,6 +168,7 @@ function History() {
             <thead>
               <tr className="bg-gray-200">
                 <th className="border p-1">Invoice ID</th>
+                <th className="border p-1">Name</th>
                 <th className="border p-1">Customer Type</th>
                 <th className="border p-1">Description</th>
                 <th className="border p-1">Type</th>
@@ -167,6 +182,7 @@ function History() {
               {handleSearch(orderProducts, ["description", "customer_type"]).map(item => (
                 <tr key={item.id}>
                   <td className="border p-1">{item.invoice_id}</td>
+                  <td className="border p-1">{item.customer_name}</td>
                   <td className="border p-1">{item.customer_type}</td>
                   <td className="border p-1">{item.description}</td>
                   <td className="border p-1">{item.type}</td>

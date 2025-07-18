@@ -15,6 +15,8 @@ export default function MarbleSaleApp() {
     discount: '',
   });
 
+  const [customerName, setCustomerName] = useState('');
+
   const [productCustomerType, setProductCustomerType] = useState('full');
 
   const [partialCustomerDetails, setPartialCustomerDetails] = useState({
@@ -115,12 +117,15 @@ export default function MarbleSaleApp() {
     const newItem = {
 
       ...product,
+       name: customerName, 
       customerType: productCustomerType,
       contact: productCustomerType === 'partial' ? partialCustomerDetails.contact : '',
       cnic: productCustomerType === 'partial' ? partialCustomerDetails.cnic : '',
       feet: feet.toFixed(2),
       total: total.toFixed(2),
     };
+
+    // setCustomerName('');   // ✅ Clear name field
 
     setProductList([...productList, newItem]);
     setProduct({ description: '', type: '', length: '', width: '', rate: '', discount: '' });
@@ -151,9 +156,9 @@ export default function MarbleSaleApp() {
               <Col md={3}>
                   <Form.Label>Name</Form.Label>
                   <Form.Control
-                    name="contact"
-                    value={partialCustomerDetails.contact}
-                    onChange={(e) => setPartialCustomerDetails({ ...partialCustomerDetails, contact: e.target.value })}
+                    name="name"
+                    value={customerName}
+                    onChange={(e) => setCustomerName( e.target.value )}
                     placeholder="Name"
                   />
                 </Col>
@@ -288,6 +293,7 @@ export default function MarbleSaleApp() {
               {productList.map((item, index) => (
                 <tr key={index}>
                   <td>{index + 1}</td>
+                  <td>{item.name}</td>
                   <td>{item.description}</td>
                   <td>{item.type}</td>
                   <td>{item.feet}</td>
@@ -319,6 +325,7 @@ export default function MarbleSaleApp() {
 
                 const payload = {
                   products: productList,
+                   name: customerName,   // Include if saving name at order level
                   ...(productCustomerType === 'partial' && {
                     contact: partialCustomerDetails.contact,
                     cnic: partialCustomerDetails.cnic,
